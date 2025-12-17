@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Home Depot Thermal Receipt</title>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+<style>
+@page {
+    size: 80mm auto;
+    margin: 4mm;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11px;
+}
+
+.receipt {
+    width: 72mm;
+    margin: auto;
+}
+
+/* ===== LOGO ===== */
+.logo {
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.logo img {
+    width: 48mm;
+    height: auto;
+}
+
+/* ===== TEXT ===== */
+.center { text-align: center; }
+.right { text-align: right; }
+.bold { font-weight: bold; }
+
+hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+}
+
+/* ===== TABLE ===== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 2px 0;
+}
+
+thead th {
+    border-bottom: 1px dashed #000;
+    font-weight: bold;
+}
+
+.items td {
+    vertical-align: top;
+}
+
+/* ===== BARCODE ===== */
+.barcode-box {
+    text-align: center;
+    margin: 6px 0;
+}
+
+/* ===== INPUTS ===== */
+input {
+    border: none;
+    width: 100%;
+    font-size: 11px;
+}
+
+input:focus {
+    outline: none;
+}
+
+/* ===== PRINT ===== */
+@media print {
+    button { display: none; }
+    img {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="receipt">
+
+<!-- LOGO -->
+<div class="logo">
+    <img src="the-home-depot-1.svg" alt="The Home Depot">
+</div>
+
+<div class="center bold">CUSTOMER RECEIPT</div>
+
+<div class="center">
+    <span id="dateTime"></span><br>
+    North Spokane #4719<br>
+    9116 Newport Hwy<br>
+    Spokane, WA 99218<br>
+    (509) 466-3700
+</div>
+
+<hr>
+
+<div>
+    <span class="bold">Order:</span> H4719-325854<br>
+    <span class="bold">Receipt:</span> 4719432585400097<br>
+    <span class="bold">Cashier:</span> Josh
+</div>
+
+<hr>
+
+<!-- ITEMS -->
+<table>
+<thead>
+<tr>
+    <th>Item</th>
+    <th class="right">Total</th>
+</tr>
+</thead>
+<tbody id="itemBody" class="items"></tbody>
+</table>
+
+<button onclick="addItem()">Add Item</button>
+
+<hr>
+
+<table>
+<tr>
+    <td>Subtotal</td>
+    <td class="right" id="sub">$0.00</td>
+</tr>
+<tr>
+    <td>Tax</td>
+    <td class="right" id="tax">$0.00</td>
+</tr>
+<tr class="bold">
+    <td>Total</td>
+    <td class="right" id="total">$0.00</td>
+</tr>
+</table>
+
+<hr>
+
+<div class="barcode-box">
+    <svg id="barcode"></svg><br>
+    4719432585400097
+</div>
+
+<hr>
+
+<div class="center">
+    Pro Xtra Member<br>
+    **** **** **** 5524<br><br>
+    THANK YOU FOR SHOPPING<br>
+    THE HOME DEPOT
+</div>
+
+</div>
+
+<script>
+const TAX_RATE = 0.065;
+
+/* Barcode */
+JsBarcode("#barcode", "4719432585400097", {
+    format: "CODE128",
+    width: 1.6,
+    height: 36,
+    displayValue: false
+});
+
+/* Date */
+function pad(n){ return n < 10 ? "0" + n : n; }
+
+function formatDateTime(d){
+    let h = d.getHours(), ampm = "AM";
+    if(h >= 12){ ampm = "PM"; h = h > 12 ? h - 12 : 12; }
+    if(h === 0) h = 12;
+    return `${pad(d.getMonth()+1)}/${pad(d.getDate())}/${d.getFullYear()} ${pad(h)}:${pad(d.getMinutes())} ${ampm}`;
+}
+
+document.getElementById("dateTime").innerText = formatDateTime(new Date());
+
+/* Items */
+function addItem(){
+    const body = document.getElementById("itemBody");
+    const row = document.createElement("tr");
+    row.innerHTML = `
+        <td>
+            <input placeholder="Item description"><br>
+            <input type="number" step="0.01" placeholder="Price" oninput="recalc()"> x
+            <input type="number" value="1" style="width:24px" oninput="recalc()">
+        </td>
+        <td class="right">$0.00</td>
+    `;
+    body.appendChild(row);
+}
+
+function recalc(){
+    let sub = 0;
+    document.querySelectorAll("#itemBody tr").forEach(r => {
+        const price = +r.querySelector('input[type="number"]').value || 0;
+        const qty = +r.querySelectorAll('input[type="number"]')[1].value || 0;
+        const total = price * qty;
+        r.cells[1].innerText = `$${total.toFixed(2)}`;
+        sub += total;
+    });
+    const tax = sub * TAX_RATE;
+    document.getElementById("sub").innerText = `$${sub.toFixed(2)}`;
+    document.getElementById("tax").innerText = `$${tax.toFixed(2)}`;
+    document.getElementById("total").innerText = `$${(sub + tax).toFixed(2)}`;
+}
+</script>
+
+</body>
+</html>
